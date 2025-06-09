@@ -85,6 +85,7 @@ def main():
 
     # writing in the .abi file
     with open(abi_path, "w") as f:
+        f.write("# Abinit crystal structure")
         f.write("acell " + ' '.join(clean_format(a) for a in acell) + "  # in Bohr\n")
         f.write("rprim\n")
         for vec in rprim:
