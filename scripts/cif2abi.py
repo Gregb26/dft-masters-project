@@ -16,22 +16,24 @@ Outputs:
 Dependencies:
     pymatgen, numpy, ase
 """
+import numpy as np
+import argparse
+import sys
+import os
 
 from pymatgen.core import Structure as PMGStructure
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 from ase.units import Bohr
-import numpy as np
-import sys
-import os
 
 def clean_format(x, tol=1e-14, precision=2):
     """
     Returns clean string for float x.
-    :param x: float to be cleaned
-    :param tol: numbers smaller than this will be set to zero
-    :param precision: number of decimals to keep
-
-    :return: cleaned float
+    Inputs:
+        x: float to be cleaned
+        tol: numbers smaller than this will be set to zero
+        precision: number of decimals to keep
+    Outputs:
+        cleaned float
     """
     if abs(x) < tol:
         x = 0
@@ -39,16 +41,17 @@ def clean_format(x, tol=1e-14, precision=2):
 
 def main():
 
-    if len(sys.argv) < 2:
-        print("usage: cif2abi.py crystal.cif")
-        sys.exit(1)
+    parser = argparse.ArgumentParser(description="Convert .cif file to .abi ABINIT-compatible structure block.")
+    parser.add_argument("cif_file", help=".cif to convert")
+    parser.add_argument("--full", choices=['no', 'yes'], default='no', help="Writes a minimal working example .abi file: yes")
+    args = parser.parse_args()
 
-    cif_path = sys.argv[1]
+    cif_path = args.cif_file
 
     struct = PMGStructure.from_file(cif_path)
     primitive = SpacegroupAnalyzer(struct).get_primitive_standard_structure()
 
-    # get lattice vectors in angstromcd
+    # get lattice vectors in angstrom
     latt = primitive.lattice.matrix
 
     # converting to Bohr
@@ -85,6 +88,7 @@ def main():
 
     # writing in the .abi file
     with open(abi_path, "w") as f:
+
         f.write("# Abinit crystal structure\n")
         f.write("acell " + ' '.join(clean_format(a) for a in acell) + "  # in Bohr\n")
         f.write("rprim\n")
@@ -99,6 +103,47 @@ def main():
         f.write("xred\n")
         for site in primitive:
             f.write("  " + ' '.join(clean_format(x) for x in site.frac_coords) + "\n")
+        f.write("\n")
+
+        if args.full == "yes":
+            f.write("# pseudopotentials\n")
+            f.write('pp_dirpath "$ABI_PSP"\n')
+            f.write('pseudos ""\n')
+            f.write('\n')
+
+            f.write('# exchange-correlation functional\n')
+            f.write('ixc 11 # PBE\n')
+            f.write('\n')
+
+            f.write('# planewave basis set\n')
+            f.write('ecut 20 # planewave energy cutoff\n')
+            f.write('\n')
+
+            f.write('# kpoint grid\n')
+            f.write('kptopt 1\n')
+            f.write('ngkpt 8 8 8\n')
+            f.write('nshiftk 4\n')
+            f.write('shiftk\n')
+            f.write('  0.5 0.5 0.5\n')
+            f.write('  0.5 0.0 0.0\n')
+            f.write('  0.0 0.5 0.0\n')
+            f.write('  0.0 0.0 0.5\n')
+            f.write('\n')
+
+            f.write('# SCF procedure\n')
+            f.write('nstep 50\n')
+            f.write('toldfe 1.0d-8\n')
+            f.write('diemac 12.0\n')
+            f.write('\n')
+
+            f.write('# postprocessing\n')
+            f.write('prtvol 1\n')
+
+            print('Writing minimal working example with crystal structure information in an ABINIT readable .abi file')
+        elif args.full == "no":
+            print('Writing crystal structure file in an ABINIT readable .abi file.')
+        else:
+            raise ValueError("Incorrect input. --full accepts the following values: yes, no. Default is no")
 
 if __name__ == "__main__":
     main()
