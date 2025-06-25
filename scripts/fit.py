@@ -7,7 +7,7 @@ Usage:
     python fit.py --param PARAM --fit FIT, in the directory with *GSR.nc file to analyze
 
 Inputs:
-    *GSR.nc files, --param: ecut, nkpt, volume, --fit: murnaghan, birch-murnaghan, lorentzian
+    *GSR.nc files, --param: ecut, nkpt, volume, --fit: murnaghan, birch-murnaghan, lorentzian, --preview: yes, no
 
 Outputs:
     Best fit parameters, covriance matrix, plot of data + fit
@@ -19,10 +19,10 @@ Dependencies:
 import numpy as np
 import argparse
 import glob
-import matplotlib.pyplot as plt
 
 from natsort import natsorted
 from abinit_tools.reader import read_files
+from abinit_tools.plot_config import setup
 from scipy.optimize import curve_fit
 
 # defining common fit functions
@@ -96,6 +96,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--param", required=True, help="Parameter to extract from file: ecut, volume, nkpt")
     parser.add_argument("--fit", required=True, help="Type of fit to perform: murnaghan, birch-murnaghan, lorentzian" )
+    parser.add_argument("--preview", choices=['no', 'yes'], default='no', help="Display the plot interactively: yes, no. Default is no")
     args = parser.parse_args()
 
     files = natsorted(glob.glob("*GSR.nc"))
@@ -117,6 +118,8 @@ def main():
     print("Covariance matrix: ", pcov)
 
     # Plot
+    plt = setup(use_pgf=(args.preview == "no"))
+
     x_fit = np.linspace(min(params), max(params), 200)
     y_fit = fit_func(x_fit, *popt)
 
@@ -127,7 +130,10 @@ def main():
     plt.legend()
     plt.title(f"{args.fit} fit")
     plt.tight_layout()
-    plt.show()
+    plt.savefig("out.pgf")
+
+    if args.preview == 'yes':
+        plt.show()
 
 if __name__ == "__main__":
     main()
