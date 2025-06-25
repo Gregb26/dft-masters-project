@@ -46,9 +46,9 @@ def main():
     parser.add_argument("--full", choices=['no', 'yes'], default='no', help="Writes a minimal working example .abi file: yes")
     args = parser.parse_args()
 
-    cif_path = args.cif_file
+    cif_file = args.cif_file
 
-    struct = PMGStructure.from_file(cif_path)
+    struct = PMGStructure.from_file(cif_file)
     primitive = SpacegroupAnalyzer(struct).get_primitive_standard_structure()
 
     # get lattice vectors in angstrom
@@ -73,10 +73,10 @@ def main():
     typat = [unique_z.index(z) + 1 for z in atomic_number]
 
     # extract base filename without extension
-    basename = os.path.splitext(os.path.basename(cif_path))[0]
+    basename = os.path.splitext(os.path.basename(cif_file))[0]
 
     # get full path to parent directory of cif_files/
-    parent_dir = os.path.dirname(os.path.abspath(cif_path))
+    parent_dir = os.path.dirname(os.path.abspath(cif_file))
     project_root = os.path.dirname(parent_dir) # one level up (parent directory)
 
     # create abi_files/ path relative to project root
