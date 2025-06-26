@@ -4,71 +4,30 @@ fit.py
 Fits a model to given data.
 
 Usage:
-    python fit.py --param PARAM --fit FIT, in the directory with *GSR.nc file to analyze
+    python fit.py --param PARAM --fit FIT --preview yes/no, in the directory with *GSR.nc file to analyze
 
 Inputs:
-    *GSR.nc files, --param: ecut, nkpt, volume, --fit: murnaghan, birch-murnaghan, lorentzian, --preview: yes, no
+    *GSR.nc files, --param {ecut, nkpt, volume}, --fit {murnaghan, birch-murnaghan, lorentzian, gaussian}
+     --preview {yes, no}
 
 Outputs:
-    Best fit parameters, covriance matrix, plot of data + fit
+    Best fit parameters, covariance matrix, plot of data + fit
 
 Dependencies:
-    numpy, matplotlib, natsort, scipy, abinit_tools, abipy
+    abinit_tools abipy natsort numpy, matplotlib, scipy
 """
 
 import numpy as np
 import argparse
 import glob
+import abinit_tools.fits
 
 from natsort import natsorted
-from abinit_tools.reader import read_files
+from abinit_tools.reader import reader
 from abinit_tools.plot_config import setup
 from scipy.optimize import curve_fit
 
-# defining common fit functions
-def murnaghan(V, V_0, E_0, B_0, B_1):
-    """
-    Murnaghan equation of state establishing the relationship between the volume and the pressure of a body.
-    Inputs:
-        V: Volume
-        V_0: Volume at equilibrium (usually what we want to extract from this fit)
-        E_0: Energy at equilibrium
-        B_0: Bulk modulus at ambient pressure
-        B_1: First derivative of the bulk modulus at ambient pressure
-    Output:
-        total energy E(V)
-    """
-    return E_0 + B_0*V_0*((1 / (B_1*(B_1 - 1)))*(V/V_0)**(1-B_1) + V / (B_1*V_0) - 1 /(B_1 -1) )
-
-def birch_murnaghan(V, V_0, E_0, B_0, B_1):
-    """
-    Birch-Murnaghan equation of state establishing the relationship between the volume and the pressure of a body.
-    More precise than the Murnaghan equation of state.
-    Inputs:
-        V: Deformed volume
-        V_0: Volume at equilibrium (usually what we want to extract from this fit)
-        E_0: Energy at equilibrium
-        B_0: Bulk modulus at ambient pressure
-        B_1: First derivative of the bulk modulus at ambient pressure
-    Outputs:
-        total energy E(V).
-    """
-    return E_0 + (9*V_0*B_0/16)*(((V_0/V)**(2/4)-1)**3*B_1+((V_0/V)**(2/3)-1)**2*(6-4*(V_0/V)**(2/3)))
-
-def lorentzian(x, a, b, c):
-    """
-    Lorentzian function.
-    Inputs:
-        x: data
-        a: intensity scaling
-        b: center of peak
-        c: full width at half maximum (FWHM)
-    Outputs:
-        Lorentzian function evaluated at x
-    """
-    return (a/np.pi)*((c/2)/((x-b)**2+(c/2)**2))
-
-def fit_curve(x_data, y_data, fit=lorentzian):
+def fit_curve(x_data, y_data, fit=abinit_tools.fits.lorentzian):
     """
     Fits a curve to the data using scipy.optimize.curve_fit and returns optimal parameters.
     Inputs:
@@ -78,9 +37,9 @@ def fit_curve(x_data, y_data, fit=lorentzian):
     Outputs: array: array of optimal parameters
     """
     # initial guess required by scipy.optimize.curve_fit
-    if fit == lorentzian:
+    if fit == abinit_tools.fits.lorentzian:
         p0 = [min(y_data), x_data[np.argmin(y_data)], 1.0]
-    elif fit in [murnaghan, birch_murnaghan]:
+    elif fit in [abinit_tools.fits.murnaghan, abinit_tools.fits.birch_murnaghan]:
         V0_guess = x_data[np.argmin(y_data)]  # volume at minimum energy
         E0_guess = min(y_data)
         B0_guess = 0.5  # Ha/Bohr^3 — rough estimate
@@ -100,12 +59,12 @@ def main():
     args = parser.parse_args()
 
     files = natsorted(glob.glob("*GSR.nc"))
-    energy, params = read_files(files, args.param)
+    energy, params = reader(files, args.param)
 
     fit_dispatch = {
-        "lorentzian": lorentzian,
-        "murnaghan": murnaghan,
-        "birch-murnaghan": birch_murnaghan
+        "lorentzian": abinit_tools.fits.lorentzian,
+        "murnaghan": abinit_tools.fits.murnaghan,
+        "birch-murnaghan": abinit_tools.fits.birch_murnaghan,
     }
 
     if args.fit not in fit_dispatch:
