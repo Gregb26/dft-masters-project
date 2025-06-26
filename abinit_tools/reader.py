@@ -1,3 +1,17 @@
+"""
+reader.py:
+    Reads data from ABINIT output files _GSR.nc to extract total energy and a given parameters. Available parameters are
+    ecut, volume, nkpt, acell, rprim.
+Usage:
+    python reader.py, in the directory that containts the GSR.nc files to analyze.
+Inputs:
+    GSR.nc ABINIT ouput files.
+Outputs:
+    energy, parameter.
+Dependencies:
+    abipy, ase, natsort
+"""
+
 import argparse
 import numpy as np
 import glob

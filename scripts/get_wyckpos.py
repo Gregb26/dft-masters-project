@@ -1,3 +1,16 @@
+"""
+get_wyckpos.py:
+    Extracts the Wyckoff positions from a given .cif file.
+Usage:
+    python get_wyckpos.py file.cif.
+Inputs:
+    file.cif.
+Outputs
+    Wyckoff positions.
+Dependencies:
+    spglib, pymatgen.
+"""
+
 import argparse
 import spglib
 from pymatgen.core import Structure
@@ -8,7 +21,7 @@ def main():
     args = parser.parse_args()
 
     cif_file = args.cif_file
-
+    # get structure from pymatgen
     structure = Structure.from_file(cif_file)
 
     # Convert to tuple (lattice, positions, atomic numbers)
