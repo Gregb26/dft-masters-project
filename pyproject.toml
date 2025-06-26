@@ -1,0 +1,7 @@
+[project]
+name = "abinit_processing"
+version = "0.1.0"
+description = "Tools for Abinit automation"
+authors = [{ name = "Greg", email = "you@example.com" }]
+dependencies = []
+
