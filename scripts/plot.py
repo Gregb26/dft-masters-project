@@ -8,7 +8,7 @@ Usage:
     python plot.py --param PARAM, in the directory with *GSR.nc file to analyze
 
 Inputs:
-    *GSR.nc files, --param: ecut, nkpt, volume.
+    *GSR.nc files, --param: ecut, nkpt, volume, acell.
 
 Outputs:
     Plot of total_energy vs param
@@ -22,15 +22,15 @@ import argparse
 import glob
 
 from natsort import natsorted
-from abinit_tools.reader import read_files
+from abinit_tools.reader import reader
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--param", required=True, help="Parameter to extract from file: ecut, volume, nkpt")
+    parser.add_argument("--param", required=True, help="Parameter to extract from file: ecut, volume, nkpt, acell")
     args = parser.parse_args()
 
     files = natsorted(glob.glob("*GSR.nc"))
-    energy, params = read_files(files, args.param)
+    energy, params = reader(files, args.param)
 
     print(energy)
     print(params)
