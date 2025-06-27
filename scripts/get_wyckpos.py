@@ -11,14 +11,18 @@ Dependencies:
     spglib, pymatgen.
 """
 
-import argparse
 import spglib
+
+from abinit_tools.argparse_utils import parse_args
 from pymatgen.core import Structure
 
 def main():
-    parser = argparse.ArgumentParser(description="Get the Wyckoff positions from a .cif file")
-    parser.add_argument("cif_file", help="Input .cif file")
-    args = parser.parse_args()
+    args = parse_args(
+        description="Extracts the Wyckoff positions from a given .cif file.",
+        positional_args=[
+            ("cif_file", "Input cif file path")
+        ]
+    )
 
     cif_file = args.cif_file
     # get structure from pymatgen

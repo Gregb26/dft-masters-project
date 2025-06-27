@@ -12,13 +12,13 @@ Dependencies:
     abipy, ase, natsort
 """
 
-import argparse
 import numpy as np
 import glob
 
 from natsort import natsorted
 from abipy.abilab import abiopen
 from ase.units import Bohr
+from abinit_tools.argparse_utils import parse_args
 
 def reader(files, param):
     energy = []
@@ -50,12 +50,20 @@ def reader(files, param):
     return energy, params
 
 def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--param", required=True,
-                        help="Parameter to extract from file: volume, ecut, nkpt, acell, rprim")
-    args = parser.parse_args()
+    args = parse_args(
+        description="Reads data from GSR.nc ABINIT ouput files.",
+        optional_args=[
+            {
+                "--param": {
+                    "help": "Parameter to extract from GSR.nc file",
+                    "choices": ["ecut", "volume", "nkpt", "acell", "rprim"],
+                    "required": True,
+                    "type": str,
+                }
+            }
+        ]
+    )
 
-    # get file from command line
     files = natsorted(glob.glob("*GSR.nc"))
 
     energy, params = reader(files, args.param)

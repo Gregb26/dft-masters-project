@@ -18,13 +18,13 @@ Dependencies:
 """
 
 import numpy as np
-import argparse
 import glob
 import abinit_tools.fits
 
 from natsort import natsorted
-from abinit_tools.reader import reader
+from reader import reader
 from abinit_tools.plot_config import setup
+from abinit_tools.argparse_utils import parse_args
 from scipy.optimize import curve_fit
 
 def fit_curve(x_data, y_data, fit=abinit_tools.fits.lorentzian):
@@ -52,11 +52,33 @@ def fit_curve(x_data, y_data, fit=abinit_tools.fits.lorentzian):
     return popt, pcov
 
 def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--param", required=True, help="Parameter to extract from file: ecut, volume, nkpt")
-    parser.add_argument("--fit", required=True, help="Type of fit to perform: murnaghan, birch-murnaghan, lorentzian" )
-    parser.add_argument("--preview", choices=['no', 'yes'], default='no', help="Display the plot interactively: yes, no. Default is no")
-    args = parser.parse_args()
+    args = parse_args(
+        description="Fit energy to given parameter.",
+        optional_args=[
+            {
+                "--param": {
+                    "help": "Fit energy versus this parameter",
+                    "choices": ["ecut", "volume", "nkpt", "acell", "rprim"],
+                    "required": True,
+                    "type": str,
+                }
+            },
+            {
+                "--fit": {
+                    "help": "Type of fit to perform",
+                    "choices": ["lorentzian", "gaussian", "murnaghan", "birch-murnaghan"],
+                    "required": True,
+                    "type": str,
+                }
+            },
+            {
+                "--preview": {
+                    "action": "store_true",
+                    "help": "Display the plot on screen, but does not save the plot."
+                }
+            }
+        ]
+    )
 
     files = natsorted(glob.glob("*GSR.nc"))
     energy, params = reader(files, args.param)
@@ -77,7 +99,7 @@ def main():
     print("Covariance matrix: ", pcov)
 
     # Plot
-    plt = setup(use_pgf=(args.preview == "no"))
+    plt = setup(use_pgf= not args.preview)
 
     x_fit = np.linspace(min(params), max(params), 200)
     y_fit = fit_func(x_fit, *popt)
@@ -89,10 +111,11 @@ def main():
     plt.legend()
     plt.title(f"{args.fit} fit")
     plt.tight_layout()
-    plt.savefig("out.pgf")
 
-    if args.preview == 'yes':
+    if args.preview:
         plt.show()
+    else:
+        plt.savefig("out.pgf")
 
 if __name__ == "__main__":
     main()

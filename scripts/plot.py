@@ -17,17 +17,33 @@ Dependencies:
     matplotlib, natsort, abinit_tools.reader
 """
 
-import matplotlib.pyplot as plt
-import argparse
 import glob
 
 from natsort import natsorted
-from abinit_tools.reader import reader
+from reader import reader
+from abinit_tools.plot_config import setup
+from abinit_tools.argparse_utils import parse_args
 
 def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--param", required=True, help="Parameter to extract from file: ecut, volume, nkpt, acell")
-    args = parser.parse_args()
+    args = parse_args(
+        description='Plot data from GSR.nc ABINIT output files.',
+        optional_args=[
+            {
+                "--param":{
+                    "help": "Plot of total energy vs this parameter",
+                    "choices": ["ecut", "volume", "nkpt", "acell", "rprim"],
+                    "required": True,
+                    "type": str,
+                }
+            },
+            {
+                "--preview":{
+                    "action": "store_true",
+                    "help": "display the plot on screen, but does not save the plot."
+                }
+            }
+        ]
+    )
 
     files = natsorted(glob.glob("*GSR.nc"))
     energy, params = reader(files, args.param)
@@ -35,11 +51,19 @@ def main():
     print(energy)
     print(params)
 
+    # plot
+    plt = setup(use_pgf= not args.preview)
+
     plt.plot(params, energy, "*k")
     plt.plot(params, energy, "--k")
     plt.ylabel("Energy (Ha)")
     plt.xlabel(f"{args.param}")
-    plt.show()
+    plt.tight_layout()
+
+    if args.preview:
+        plt.show()
+    else:
+        plt.savefig("out.pgf")
 
 if __name__ == "__main__":
     main()

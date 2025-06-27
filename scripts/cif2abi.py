@@ -17,12 +17,11 @@ Dependencies:
     pymatgen, numpy, ase
 """
 import numpy as np
-import argparse
-import sys
 import os
 
 from pymatgen.core import Structure as PMGStructure
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
+from abinit_tools.argparse_utils import parse_args
 from ase.units import Bohr
 
 def clean_format(x, tol=1e-14, precision=2):
@@ -40,11 +39,15 @@ def clean_format(x, tol=1e-14, precision=2):
     return f"{x:.{precision}f}"
 
 def main():
-
-    parser = argparse.ArgumentParser(description="Convert .cif file to .abi ABINIT-compatible structure block.")
-    parser.add_argument("cif_file", help=".cif to convert")
-    parser.add_argument("--full", choices=['no', 'yes'], default='no', help="Writes a minimal working example .abi file: yes")
-    args = parser.parse_args()
+    args = parse_args(
+        description="Converts crystallographic data in .cif file to .abi ABINIT-compatible input file.",
+        positional_args=[
+            ("cif_file", "Input cif file path.")
+        ],
+        optional_args=[
+            {"--full": {"action": "store_true", "help": "Generates full ABINIT ready .abi file, not just the crystal info."}}
+        ]
+    )
 
     cif_file = args.cif_file
 
@@ -105,7 +108,7 @@ def main():
             f.write("  " + ' '.join(clean_format(x) for x in site.frac_coords) + "\n")
         f.write("\n")
 
-        if args.full == "yes":
+        if args.full:
             f.write("# pseudopotentials\n")
             f.write('pp_dirpath "$ABI_PSP"\n')
             f.write('pseudos ""\n')
@@ -140,10 +143,8 @@ def main():
             f.write('prtvol 1\n')
 
             print('Writing minimal working example with crystal structure information in an ABINIT readable .abi file')
-        elif args.full == "no":
-            print('Writing crystal structure file in an ABINIT readable .abi file.')
         else:
-            raise ValueError("Incorrect input. --full accepts the following values: yes, no. Default is no")
+            print('Writing crystal structure file in an ABINIT readable .abi file.')
 
 if __name__ == "__main__":
     main()
